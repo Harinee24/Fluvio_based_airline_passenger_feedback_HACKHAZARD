@@ -1,173 +1,106 @@
-# ✈️ Real-Time Airline Passenger Review Analysis
+![github-submission-banner](https://github.com/user-attachments/assets/a1493b84-e4e2-456e-a791-ce35ee2bcf2f)
 
-This project performs **real-time sentiment analysis** and satisfaction classification of airline passenger feedback using **Fluvio** for event streaming, **Socket.IO** for real-time communication, and **FastAPI** as the backend server. It leverages Hugging Face’s DistilBERT for classifying review sentiment.
+# 🚀 Real-Time Airline Passenger Review Analysis
 
----
-
-## 📌 Table of Contents
-
-- [Problem Statement](#problem-statement)
-- [Solution Overview](#solution-overview)
-- [Tech Stack](#tech-stack)
-- [System Architecture](#system-architecture)
-- [Setup Instructions](#setup-instructions)
-- [Screenshots](#screenshots)
+> Real-Time Sentiment & Satisfaction Classification for Airlines using Fluvio, FastAPI, Hugging Face, and Socket.IO
 
 ---
 
-## ❗ Problem Statement
+## 📌 Problem Statement
 
-Airlines receive a massive volume of passenger feedback and service ratings. Analyzing this data manually or in batch mode often leads to delays in identifying negative trends or dissatisfaction.
-
----
-
-## ✅ Solution Overview
-
-This project provides a **real-time pipeline** to:
-- Stream passenger feedback from Fluvio topics.
-- Classify review sentiments (good, bad, neutral).
-- Determine overall satisfaction using service ratings.
-- Emit processed data instantly to a live frontend via Socket.IO.
+**Problem Statement 3 – Real-Time Data Experiences with Fluvio,
+Stream, process, and act on real-time data using Fluvio**
 
 ---
 
-## ⚙️ Tech Stack
+## 🎯 Objective
 
-- **Backend**: FastAPI, Socket.IO
-- **Streaming**: Fluvio
-- **NLP Model**: Hugging Face `distilbert-base-uncased-finetuned-sst-2-english`
-- **Frontend**: HTML/CSS + Chart.js (or similar, customizable)
-- **Language**: Python
+This project addresses the challenge of analyzing passenger feedback in real time. Airlines receive massive volumes of textual reviews that are often delayed in their analysis. This lag can prevent immediate insights into customer dissatisfaction and operational bottlenecks.
+
+Our solution helps airlines process, analyze, and visualize customer sentiment in real-time—transforming raw feedback into actionable insights, ultimately enhancing customer satisfaction and service quality.
 
 ---
 
-## 🏗️ System Architecture
+## 🧠 Team & Approach
 
-![System Architecture](./assets/system_architecture.png)
+### Team Name:  
+Harinee S ( solo hacker )
+
+### Team Members:  
+- Harinee   
+
+### Your Approach:  
+- Chose this problem for its real-world impact in customer experience and aviation efficiency  
+- Integrated live streaming (Fluvio) with real-time ML inference (DistilBERT)  
+- Tackled streaming bottlenecks, model performance, and frontend updates using Socket.IO and FastAPI  
+- Iterated on model optimization and deployment strategy for minimal latency and maximum accuracy  
 
 ---
 
-## ⚙️ Setup Instructions
+## 🛠️ Tech Stack
 
-Follow the steps below to run the project locally:
+### Core Technologies Used:
+- **Frontend**: HTML, CSS, Chart.js  
+- **Backend**: FastAPI, Socket.IO  
+- **Database**: N/A (real-time, stateless pipeline)  
+- **APIs**: Hugging Face Transformers  
+- **Hosting**: Localhost / Deployable to any cloud platform
+
+### Sponsor Technologies Used:
+
+- ✅ **Fluvio:** Used for real-time data streaming from topic to processor
+- ✅ **Groq:** Ideal for deploying low-latency DistilBERT inference  
 
 ---
 
-### 📁 1. **Clone the Repository**
+## ✨ Key Features
 
+- ✅ Real-time sentiment classification using DistilBERT  
+- ✅ Real-time streaming using Fluvio topics  
+- ✅ Live updates via Socket.IO  
+- ✅ Responsive dashboard visualization with charts  
+
+---
+
+## 📽️ Demo & Deliverables
+
+- **Demo Video Link:** [https://youtu.be/example](https://youtu.be/example)  
+- **Pitch Deck / PPT Link:** [[https://docs.google.com/presentation/example](https://docs.google.com/presentation/d/1yAQOjSVe9mibKpAJrZ8Zfoxy8kJDY_jD/edit?usp=drivesdk&ouid=108231119769281152341&rtpof=true&sd=true)]([https://docs.google.com/presentation/example](https://docs.google.com/presentation/d/1yAQOjSVe9mibKpAJrZ8Zfoxy8kJDY_jD/edit?usp=drivesdk&ouid=108231119769281152341&rtpof=true&sd=true))
+
+---
+
+## ✅ Tasks & Bonus Checklist
+
+- ✅ **All members completed the mandatory task**  
+- ✅ **Bonus Task 1 - Badges shared**  
+- ✅ **Bonus Task 2 - Sprint.dev signup completed**
+
+---
+
+## 🧪 How to Run the Project
+
+### Requirements:
+- Python 3.8+
+- Fluvio CLI installed
+- Node.js (for frontend if dynamic)
+- API key from Hugging Face (optional if local model)
+
+### Local Setup:
 ```bash
-git clone https://github.com/your-username/AIRLINES-SENTIMENT-TRACKER.git
-cd AIRLINES-SENTIMENT-TRACKER
-```
+# Clone the repo
+git clone https://github.com/your-team/airline-review-analyzer
 
----
-
-### 🐍 2. **Install Python Dependencies**
-
-Install required packages for each component.
-
-#### a. Producer
-
-```bash
-cd producer
+# Backend Setup
+cd backend
 pip install -r requirements.txt
-```
 
-#### b. Consumer
+# Start FastAPI + Socket.IO
+uvicorn app:app --reload
 
-```bash
-cd ../consumer
-pip install -r requirements.txt
-```
-
-#### c. Backend (FastAPI + Socket.IO)
-
-```bash
-cd ../ui/backend
-pip install -r requirements.txt
-```
-
----
-
-### 🧪 3. **Start Fluvio Cluster**
-
-Make sure Fluvio is installed. If not, install it:
-
-```bash
-curl -fsS https://packages.fluvio.io/install.sh | bash
-```
-
-Start a local Fluvio cluster:
-
-```bash
-fluvio cluster start
-```
-
-Create a topic:
-
-```bash
+# Start Fluvio producer (in another terminal)
 fluvio topic create social-tweets
-```
+python producer.py  # (to simulate tweets)
 
----
-
-### 🚀 4. **Run the Components**
-
-#### a. Start the Backend Server
-
-```bash
-cd ui/backend
-python main.py
-```
-
-Backend will run at `http://localhost:8000`.
-
----
-
-#### b. Run the Consumer
-
-```bash
-cd consumer
-python tweet_sentiment_consumer.py
-```
-
-Listens to Fluvio topic and emits data via Socket.IO.
-
----
-
-#### c. Run the Producer
-
-```bash
-cd producer
-python tweet_producer.py
-```
-
-Produces messages from dataset to Fluvio topic.
-
----
-
-### 🌐 5. **View the Frontend Dashboard**
-
-Open the following file in your browser:
-
-```
-ui/frontend/index.html
-```
-
-Make sure the backend is running to receive real-time data.
-
----
-
-### 🐳 (Optional) Docker Setup
-
-You can create `Dockerfile`s and a `docker-compose.yml` to run everything in containers for production or isolated development.
-
----
-
-## 🖼️ Screenshots
-
-![Screenshot 1](./assets/satisfaction_pie.png)
-![Screenshot 2](./assets/rating_bar.png)
-![Screenshot 3](./assets/pie1.png)
-![Screenshot 4](./assets/feedback_stream.png)
-
+# Frontend Setup
+cd ../frontend
+# Open index.html in browser or use Live Server extension
