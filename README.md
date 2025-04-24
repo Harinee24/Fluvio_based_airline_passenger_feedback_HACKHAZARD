@@ -164,7 +164,7 @@ You can create `Dockerfile`s and a `docker-compose.yml` to run everything in con
 
 ---
 
-## 🖼️ System Architecture
+## 🖼️ Screenshots
 
 ![Screenshot 1](./assets/satisfaction_pie.png)
 ![Screenshot 2](./assets/rating_bar.png)
