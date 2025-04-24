@@ -45,36 +45,4 @@ This project provides a **real-time pipeline** to:
 
 ## 🏗️ System Architecture
 
-```plaintext
-                    +----------------------+
-                    |     Fluvio Topic     |
-                    | (social-tweets)      |
-                    +----------------------+
-                              |
-                              v
-                     +------------------+
-                     |  consumer.py     |
-                     | - Reads from     |
-                     |   Fluvio         |
-                     | - Classifies     |
-                     |   review text    |
-                     | - Rates user     |
-                     +------------------+
-                              |
-                              v
-                     +------------------+
-                     |  Socket.IO Emit  |
-                     |  (to FastAPI)    |
-                     +------------------+
-                              |
-                              v
-                     +------------------+
-                     |   FastAPI App    |
-                     |  with Socket.IO  |
-                     +------------------+
-                              |
-                              v
-                     +------------------+
-                     |   Frontend App   |
-                     | (Live Dashboard) |
-                     +------------------+
+![System Architecture](./assets/system_architecture.png)
