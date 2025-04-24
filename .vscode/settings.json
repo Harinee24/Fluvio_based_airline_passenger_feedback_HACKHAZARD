@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./fluvio-client-python",
+        "./fluvio-client-python"
+    ]
+}

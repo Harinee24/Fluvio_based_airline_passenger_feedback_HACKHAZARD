@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Customer Sentiment Tracker</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f7fa;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .dashboard {
+      width: 95%;
+      max-width: 1000px;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+      padding: 30px 40px;
+      overflow: hidden;
+    }
+
+    .header {
+      text-align: center;
+      font-weight: 700;
+      font-size: 28px;
+      margin-bottom: 20px;
+      color: #2c3e50;
+      border-bottom: 3px solid #eee;
+      padding-bottom: 10px;
+    }
+
+    .counter {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin: 25px 0;
+    }
+
+    .counter span {
+      font-size: 18px;
+      font-weight: bold;
+      padding: 10px 20px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .satisfied-count {
+      background: #eafaf1;
+      color: #27ae60;
+      border: 2px solid #27ae60;
+    }
+
+    .dissatisfied-count {
+      background: #fdecea;
+      color: #e74c3c;
+      border: 2px solid #e74c3c;
+    }
+
+    .chart-container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto 40px;
+      height: 300px;
+      position: relative;
+    }
+
+    .bar-chart-container {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto 40px;
+      height: 200px;
+    }
+
+    .pie-chart-container {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 40px;
+      width: 100%;
+    }
+
+    .feed-header {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 30px 0 15px;
+      color: #333;
+      text-align: center;
+      border-top: 2px solid #ccc;
+      border-bottom: 2px solid #ccc;
+      padding: 10px 0;
+    }
+
+    #live-feed {
+      height: 300px;
+      overflow-y: auto;
+      background: #1e1e1e;
+      color: #fff;
+      font-size: 15px;
+      padding: 12px;
+      border-radius: 10px;
+      scroll-behavior: smooth;
+    }
+
+    .tweet-line {
+      margin-bottom: 10px;
+      padding: 6px 10px;
+      border-left: 5px solid;
+      border-radius: 5px;
+      transition: background 0.3s;
+    }
+
+    .tweet-line:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .positive {
+      color: #2ecc71;
+      border-color: #2ecc71;
+    }
+
+    .negative {
+      color: #e74c3c;
+      border-color: #e74c3c;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dashboard">
+    <div class="header">Customer Sentiment Live Dashboard</div>
+
+    <div class="counter">
+      <span class="satisfied-count">✅ Satisfied Customers: <span id="satisfied-count">0</span></span>
+      <span class="dissatisfied-count">❌ Dissatisfied Customers: <span id="dissatisfied-count">0</span></span>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="satisfactionChart"></canvas>
+    </div>
+
+    <div class="bar-chart-container">
+      <canvas id="ratingsChart"></canvas>
+    </div>
+
+    <div class="bar-chart-container">
+      <canvas id="lastWeekRatingsChart"></canvas>
+    </div>
+
+    <div class="pie-chart-container">
+      <div
+        style="width: 30%; height: 300px; display: flex; flex-direction: column; align-items: center;padding-bottom: 50px;">
+        <canvas id="genderChart" style="flex-grow: 1;"></canvas>
+        <div style="margin-top: 10px; font-weight: bold; font-size: 16px;">Passenger Gender Pie Chart</div>
+      </div>
+      <div
+        style="width: 30%; height: 300px; display: flex; flex-direction: column; align-items: center;padding-bottom: 50px;">
+        <canvas id="ageChart" style="flex-grow: 1;"></canvas>
+        <div style="margin-top: 10px; font-weight: bold; font-size: 16px;">Passenger Age Pie Chart</div>
+      </div>
+    </div>
+
+    <div class="pie-chart-container">
+      <div
+        style="width: 30%; height: 300px; display: flex; flex-direction: column; align-items: center;padding-bottom: 50px;">
+        <canvas id="travelChart" style="flex-grow: 1;"></canvas>
+        <div style="margin-top: 10px; font-weight: bold; font-size: 16px;">Type of Travel Pie Chart</div>
+      </div>
+      <div
+        style="width: 30%; height: 300px; display: flex; flex-direction: column; align-items: center; padding-bottom: 50px;">
+        <canvas id="reviewChart" style="flex-grow: 1;"></canvas>
+        <div style="margin-top: 10px; font-weight: bold; font-size: 16px;">Review Sentiment Pie Chart</div>
+      </div>
+    </div>
+
+    <div class="pie-chart-container">
+      <div
+        style="width: 30%; height: 400px; display: flex; flex-direction: column; align-items: center; padding-bottom: 0px;margin-bottom: 50px;">
+        <canvas id="categoryRatingsPieChart" style="flex-grow: 1;"></canvas>
+        <div style="margin-top: 10px; font-weight: bold; font-size: 16px;">Overall Category Ratings Pie Chart</div>
+      </div>
+      <div
+        style="width: 30%; height: 400px; display: flex; flex-direction: column; align-items: center; padding-bottom: 0px;margin-bottom: 50px;">
+        <canvas id="lastWeekCategoryRatingsPieChart" style="flex-grow: 1;"></canvas>
+        <div style="margin-top: 10px; font-weight: bold; font-size: 16px;">Last Week Category Ratings Pie Chart</div>
+      </div>
+    </div>
+
+
+
+    <div class="feed-header">🔴 Live Feedback Stream</div>
+    <div id="live-feed"></div>
+
+    <script>
+      Chart.register(ChartDataLabels);
+
+      const socket = io("http://localhost:8000");
+      let satisfiedCount = 0;
+      let dissatisfiedCount = 0;
+      let genderCounts = { male: 0, female: 0 };
+      let ageCounts = { '0-18': 0, '19-35': 0, '36-50': 0, '51+': 0 };
+      let travelCounts = { business: 0, personal: 0 };
+
+      const satisfiedEl = document.getElementById("satisfied-count");
+      const dissatisfiedEl = document.getElementById("dissatisfied-count");
+      const feed = document.getElementById("live-feed");
+
+      let reviewCounts = { good: 0, bad: 0 };
+
+      const ctxReview = document.getElementById('reviewChart').getContext('2d');
+      const reviewChart = new Chart(ctxReview, {
+        type: 'pie',
+        data: {
+          labels: ['Good Reviews', 'Bad Reviews'],
+          datasets: [{
+            data: [0, 0],
+            backgroundColor: ['#2ecc71', '#c0392b'],
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { font: { size: 14 } }
+            },
+            datalabels: {
+              color: '#fff', // Label text color
+              font: {
+                weight: 'bold',
+                size: 12
+              },
+              formatter: (value, context) => {
+  const data = context.chart.data.datasets[0].data;
+  const total = data.reduce((acc, val) => acc + val, 0);
+  const percentage = (value / total * 100).toFixed(1);
+  return value > 0 ? `${percentage}%` : '';
+}
+// Show the numeric value
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: false,
+          devicePixelRatio: 2
+        }
+      });
+
+
+      const ctxSatisfaction = document.getElementById('satisfactionChart').getContext('2d');
+      const satisfactionChart = new Chart(ctxSatisfaction, {
+        type: 'pie',
+        data: {
+          labels: ['Satisfied', 'Dissatisfied'],
+          datasets: [{
+            data: [0, 0],
+            backgroundColor: ['#27ae60', '#e74c3c'],
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { font: { size: 14 } }
+            },
+            datalabels: {
+              color: '#fff', // Label text color
+              font: {
+                weight: 'bold',
+                size: 12
+              },
+              formatter: (value, context) => {
+  const data = context.chart.data.datasets[0].data;
+  const total = data.reduce((acc, val) => acc + val, 0);
+  const percentage = (value / total * 100).toFixed(1);
+  return value > 0 ? `${percentage}%` : '';
+}
+ // Show the numeric value
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: false,
+          devicePixelRatio: 2
+        }
+      });
+
+      const ctxRatings = document.getElementById('ratingsChart').getContext('2d');
+      const ratingsChart = new Chart(ctxRatings, {
+        type: 'bar',
+        data: {
+          labels: ['Seat Comfort', 'Departure Time', 'Food & Drink', 'Inflight Wifi', 'Inflight Entertainment', 'Online Support', 'Online Booking', 'On-board Service', 'Leg Room', 'Baggage Handling', 'Cleanliness', 'Online Boarding'],
+          datasets: [{
+            label: 'Ratings (0-5)',
+            data: Array(12).fill(0),
+            backgroundColor: '#3498db',
+            borderColor: '#2980b9',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          devicePixelRatio: 2, 
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 5,
+              title: {
+                display: true,
+                text: 'Rating'
+              }
+            }
+          }
+        },
+        plugins: [ChartDataLabels] // Activate the plugin
+      });
+
+      const ctxLastWeekRatings = document.getElementById('lastWeekRatingsChart').getContext('2d');
+      const lastWeekRatingsChart = new Chart(ctxLastWeekRatings, {
+        type: 'bar',
+        data: {
+          labels: ['Seat Comfort', 'Departure Time', 'Food & Drink', 'Inflight Wifi', 'Inflight Entertainment', 'Online Support', 'Online Booking', 'On-board Service', 'Leg Room', 'Baggage Handling', 'Cleanliness', 'Online Boarding'],
+          datasets: [{
+            label: 'Last Week Ratings (0-5)',
+            data: Array(12).fill(0),
+            backgroundColor: '#2ecc71', // Green for last week
+            borderColor: '#27ae60',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          devicePixelRatio: 2, 
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 5,
+              title: {
+                display: true,
+                text: 'Rating'
+              }
+            }
+          }
+        }
+      });
+
+      const ctxGender = document.getElementById('genderChart').getContext('2d');
+      const genderChart = new Chart(ctxGender, {
+        type: 'pie',
+        data: {
+          labels: ['Male', 'Female'],
+          datasets: [{
+            data: [genderCounts.male, genderCounts.female],
+            backgroundColor: ['#3498db', '#e022b7'],
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { font: { size: 14 } }
+            },
+            datalabels: {
+              color: '#fff', // Label text color
+              font: {
+                weight: 'bold',
+                size: 12
+              },
+              formatter: (value, context) => {
+  const data = context.chart.data.datasets[0].data;
+  const total = data.reduce((acc, val) => acc + val, 0);
+  const percentage = (value / total * 100).toFixed(1);
+  return value > 0 ? `${percentage}%` : '';
+}
+ // Show the numeric value
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: false,
+          devicePixelRatio: 2
+        }
+      });
+
+      const ctxAge = document.getElementById('ageChart').getContext('2d');
+      const ageChart = new Chart(ctxAge, {
+        type: 'pie',
+        data: {
+          labels: ['0-18', '19-35', '36-50', '51+'],
+          datasets: [{
+            data: [ageCounts['0-18'], ageCounts['19-35'], ageCounts['36-50'], ageCounts['51+']],
+            backgroundColor: ['#27ae60', '#f39c12', '#e74c3c', '#8e44ad'],
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { font: { size: 14 } }
+            },
+            datalabels: {
+              color: '#fff', // Label text color
+              font: {
+                weight: 'bold',
+                size: 12
+              },
+              formatter: (value, context) => {
+  const data = context.chart.data.datasets[0].data;
+  const total = data.reduce((acc, val) => acc + val, 0);
+  const percentage = (value / total * 100).toFixed(1);
+  return value > 0 ? `${percentage}%` : '';
+}
+// Show the numeric value
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: false,
+          devicePixelRatio: 2
+        }
+      });
+
+      const ctxTravel = document.getElementById('travelChart').getContext('2d');
+      const travelChart = new Chart(ctxTravel, {
+        type: 'pie',
+        data: {
+          labels: ['Business Travel', 'Personal Travel'],
+          datasets: [{
+            data: [travelCounts.business, travelCounts.personal],
+            backgroundColor: ['#1abc9c', '#9b59b6'],
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { font: { size: 14 } }
+            },
+            datalabels: {
+              color: '#fff', // Label text color
+              font: {
+                weight: 'bold',
+                size: 12
+              },
+              formatter: (value, context) => {
+  const data = context.chart.data.datasets[0].data;
+  const total = data.reduce((acc, val) => acc + val, 0);
+  const percentage = (value / total * 100).toFixed(1);
+  return value > 0 ? `${percentage}%` : '';
+}
+// Show the numeric value
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: false,
+          devicePixelRatio: 2
+        }
+      });
+
+      const categoryLabels = [
+        'Seat Comfort', 'Departure Time', 'Food & Drink', 'Inflight Wifi',
+        'Inflight Entertainment', 'Online Support', 'Online Booking',
+        'On-board Service', 'Leg Room', 'Baggage Handling',
+        'Cleanliness', 'Online Boarding'
+      ];
+
+      // Overall Category Ratings Pie Chart
+      const ctxCategoryPie = document.getElementById('categoryRatingsPieChart').getContext('2d');
+      const categoryRatingsPieChart = new Chart(ctxCategoryPie, {
+        type: 'pie',
+        data: {
+          labels: categoryLabels,
+          datasets: [{
+            data: Array(12).fill(0),
+            backgroundColor: [
+              '#f39c12', '#e74c3c', '#2ecc71', '#3498db',
+              '#9b59b6', '#1abc9c', '#e67e22', '#34495e',
+              '#16a085', '#2980b9', '#d35400', '#8e44ad'
+            ],
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { font: { size: 12 } }
+            },
+            datalabels: {
+              color: '#fff', // Label text color
+              font: {
+                weight: 'bold',
+                size: 12
+              },
+              formatter: (value, context) => {
+  const data = context.chart.data.datasets[0].data;
+  const total = data.reduce((acc, val) => acc + val, 0);
+  const percentage = (value / total * 100).toFixed(1);
+  return value > 0 ? `${percentage}%` : '';
+}
+ // Show the numeric value
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: false,
+          devicePixelRatio: 2
+        },
+        plugins: [ChartDataLabels] // Activate the plugin
+      });
+
+      // Last Week Category Ratings Pie Chart
+      function fixCanvasBlur(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return ctx;
+}
+
+// Apply the fix to your canvas
+const lastWeekCanvas = document.getElementById('lastWeekCategoryRatingsPieChart');
+const ctxLastWeekCategoryPie = fixCanvasBlur(lastWeekCanvas);
+
+const lastWeekCategoryRatingsPieChart = new Chart(ctxLastWeekCategoryPie, {
+  type: 'pie',
+  data: {
+    labels: categoryLabels,
+    datasets: [{
+      data: Array(12).fill(0),
+      backgroundColor: [
+        '#f39c12', '#e74c3c', '#2ecc71', '#3498db',
+        '#9b59b6', '#1abc9c', '#e67e22', '#34495e',
+        '#16a085', '#2980b9', '#d35400', '#8e44ad'
+      ],
+      borderWidth: 0,
+    }]
+  },
+  options: {
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { font: { size: 12 } }
+      },
+      datalabels: {
+        color: '#fff',
+        font: {
+          weight: 'bold',
+          size: 12
+        },
+        formatter: (value, context) => {
+          const data = context.chart.data.datasets[0].data;
+          const total = data.reduce((acc, val) => acc + val, 0);
+          const percentage = (value / total * 100).toFixed(1);
+          return value > 0 ? `${percentage}%` : '';
+        }
+      }
+    },
+    responsive: true,
+    maintainAspectRatio: false,
+    devicePixelRatio: 2
+  }
+});
+
+
+
+      socket.on("connect", () => {
+        console.log("✅ Connected to backend with ID:", socket.id);
+      });
+
+      socket.on("disconnect", () => {
+        console.warn("❌ Disconnected from backend");
+        setTimeout(() => socket.connect(), 1000);
+      });
+
+      socket.on("connect_error", (err) => {
+        console.error("🔥 Connection Error:", err);
+      });
+
+      socket.on("reconnect_attempt", () => {
+        console.log("Trying to reconnect...");
+      });
+
+      socket.on("tweet", (data) => {
+
+        const { sentiment, class: passengerClass, ratings, gender, age, type_of_travel, text_review, satisfaction, Review_created } = data;
+
+        const reviewDate = new Date(Review_created);
+        const startDate = new Date('2025-04-12');
+        const endDate = new Date('2025-04-19');
+
+
+        const ratingSums = Array(12).fill(0);
+        let totalRatingsCount = 0;
+        const lastWeekRatingSums = Array(12).fill(0);
+        let lastWeekRatingsCount = 0;
+        let lastWeekRatingsAvailable = false;
+
+        const isLastWeek = reviewDate >= startDate && reviewDate <= endDate;
+
+        const ratingsArray = [
+          ratings.seat_comfort,
+          ratings.departure_time,
+          ratings.food_and_drink,
+          ratings.inflight_wifi,
+          ratings.inflight_entertainment,
+          ratings.online_support,
+          ratings.online_booking,
+          ratings.onboard_service,
+          ratings.leg_room,
+          ratings.baggage_handling,
+          ratings.cleanliness,
+          ratings.online_boarding
+        ];
+
+        const positiveRatings = ratingsArray.filter(rating => rating >= 3).length;
+        const reviewSentiment = positiveRatings >= 4 ? "satisfied" : "unsatisfied";
+
+        if (reviewSentiment.toLowerCase() === "satisfied") {
+          satisfiedCount++;
+        } else if (satisfaction.toLowerCase() === "unsatisfied") {
+          dissatisfiedCount++;
+        }
+
+        satisfiedEl.textContent = satisfiedCount;
+        dissatisfiedEl.textContent = dissatisfiedCount;
+
+        satisfactionChart.data.datasets[0].data = [satisfiedCount, dissatisfiedCount];
+        satisfactionChart.update();
+
+        ratingsArray.forEach((rating, index) => {
+          ratingSums[index] += rating;
+        });
+        totalRatingsCount++;
+
+        if (isLastWeek) {
+          ratingsArray.forEach((rating, index) => {
+            lastWeekRatingSums[index] += rating;
+          });
+          lastWeekRatingsCount++;
+          lastWeekRatingsAvailable = true;
+        }
+
+        if (lastWeekRatingsAvailable && lastWeekRatingsCount > 0) {
+          const avgLastWeekRatings = lastWeekRatingSums.map(sum =>
+            (sum / lastWeekRatingsCount).toFixed(2)
+          );
+          lastWeekRatingsChart.data.datasets[0].data = avgLastWeekRatings;
+          lastWeekRatingsChart.update();
+        }
+
+        const avgRatings = ratingSums.map(sum => (totalRatingsCount > 0 ? (sum / totalRatingsCount).toFixed(2) : 0));
+        ratingsChart.data.datasets[0].data = avgRatings;
+        ratingsChart.update();
+
+
+        if (gender === 1) {
+          genderCounts.female++;
+        } else if (gender === 0) {
+          genderCounts.male++;
+        }
+
+        genderChart.data.datasets[0].data = [genderCounts.male, genderCounts.female];
+        genderChart.update();
+
+        if (age <= 18) {
+          ageCounts['0-18']++;
+        } else if (age <= 35) {
+          ageCounts['19-35']++;
+        } else if (age <= 50) {
+          ageCounts['36-50']++;
+        } else {
+          ageCounts['51+']++;
+        }
+
+        ageChart.data.datasets[0].data = [ageCounts['0-18'], ageCounts['19-35'], ageCounts['36-50'], ageCounts['51+']];
+        ageChart.update();
+
+        if (type_of_travel === 0) {
+          travelCounts.business++;
+        } else if (type_of_travel === 1) {
+          travelCounts.personal++;
+        }
+
+        travelChart.data.datasets[0].data = [travelCounts.business, travelCounts.personal];
+        travelChart.update();
+
+        if (sentiment === "good") {
+          reviewCounts.good++;
+        } else {
+          reviewCounts.bad++;
+        }
+
+        reviewChart.data.datasets[0].data = [reviewCounts.good, reviewCounts.bad];
+        reviewChart.update();
+
+        // ✅ Update Overall Category Ratings
+        for (let i = 0; i < ratingsArray.length; i++) {
+          categoryRatingsPieChart.data.datasets[0].data[i] += ratingsArray[i];
+        }
+        categoryRatingsPieChart.update();
+
+        // ✅ Update Last Week Category Ratings ONLY if within date
+        if (isLastWeek) {
+          for (let i = 0; i < ratingsArray.length; i++) {
+            lastWeekCategoryRatingsPieChart.data.datasets[0].data[i] += ratingsArray[i];
+          }
+          lastWeekCategoryRatingsPieChart.update();
+        }
+
+
+        const genderDisplay = gender === 1 ? "female" : "male";
+        const passengerClassDisplay = passengerClass === 1 ? "Business" : passengerClass === 2 ? "Economy Plus" : "Economy";
+        const travelTypeDisplay = type_of_travel === 0 ? "Business Travel" : "Personal Travel";
+
+        const div = document.createElement("div");
+        div.className = `tweet-line ${sentiment === "good" ? "positive" : "negative"}`;
+        //div.innerHTML = `<strong>[${time}] ${sentiment.toUpperCase()} | Review: ${text_review} </strong><br>Posted by a ${genderDisplay} Passenger from ${passengerClassDisplay} class of Age ${age} (${travelTypeDisplay})`;
+        div.innerHTML = `<strong>[${Review_created}] ${sentiment.toUpperCase()} | Review: ${text_review} </strong><br>Posted by a ${genderDisplay} Passenger from ${passengerClassDisplay} class of Age ${age} (${travelTypeDisplay})`;
+        feed.prepend(div);
+      });
+    </script>
+</body>
+
+</html>
